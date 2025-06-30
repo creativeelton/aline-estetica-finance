@@ -117,9 +117,8 @@ export default function LoginPage() {
           src="https://placehold.co/1280x1800.png"
           data-ai-hint="aesthetics clinic"
           alt="Imagem de uma clínica de estética"
-          width={1280}
-          height={1800}
-          className="h-full w-full object-cover"
+          fill
+          className="object-cover"
         />
       </div>
     </div>
