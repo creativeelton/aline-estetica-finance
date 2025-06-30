@@ -25,7 +25,7 @@ export async function deleteTransactionAction(transactionId: string): Promise<Fo
         const result = await deleteTransaction(validatedId.data);
 
         if (!result.success) {
-            return { success: false, error: "Transação não encontrada." };
+            return { success: false, error: result.error || "Falha ao excluir a transação." };
         }
 
         revalidatePath('/');
@@ -83,7 +83,7 @@ const pdfReportSchema = z.object({
           const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   
           // Define Colors (0-1 scale)
-          const primaryColor = rgb(0.21, 0.08, 0.61);
+          const primaryColor = rgb(0.46, 0.4, 0.9);
           const whiteColor = rgb(1, 1, 1);
           const darkTextColor = rgb(0.1, 0.1, 0.1);
           const mutedTextColor = rgb(0.4, 0.4, 0.4);

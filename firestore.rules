@@ -1,0 +1,15 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Garante que apenas usuários autenticados que possuem as transações
+    // possam acessá-las.
+    match /transactions/{transactionId} {
+      // O usuário pode ler, atualizar ou excluir um documento se o userId do documento
+      // corresponder ao seu próprio uid.
+      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      // O usuário pode criar um documento se estiver logado e o userId do novo
+      // documento for o seu próprio uid.
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+    }
+  }
+}

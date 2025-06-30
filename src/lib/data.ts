@@ -9,29 +9,28 @@ import {
   query, 
   orderBy, 
   where,
-  Timestamp
+  getDoc
 } from 'firebase/firestore';
 import { auth } from './firebase';
-
-// NOTE: For a real multi-user app, you must secure these Firestore operations.
-// These functions currently operate on a single global 'transactions' collection.
-// You should add security rules in your Firebase console to ensure
-// users can only access their own data. This typically involves adding a `userId`
-// field to each transaction and modifying the queries below to filter by the
-// authenticated user's ID.
 
 const transactionsCollection = collection(db, 'transactions');
 
 export async function getTransactions(options?: { from?: string; to?: string }): Promise<Transaction[]> {
-  // In a real multi-user app, you'd add another where('userId', '==', auth.currentUser.uid) clause.
-  // This requires passing the user context or using Firebase Admin SDK for verification.
-  const queryConstraints = [orderBy('date', 'desc')];
+  const user = auth.currentUser;
+  if (!user) {
+    console.warn("Nenhum usuário autenticado encontrado. Retornando lista de transações vazia.");
+    return [];
+  }
+
+  const queryConstraints = [
+    where('userId', '==', user.uid),
+    orderBy('date', 'desc')
+  ];
   
   if (options?.from) {
     queryConstraints.push(where('date', '>=', options.from));
   }
   if (options?.to) {
-    // To make the 'to' date inclusive, we get the next day and use '<'
     const toDate = new Date(options.to);
     toDate.setDate(toDate.getDate() + 1);
     queryConstraints.push(where('date', '<', toDate.toISOString().split('T')[0]));
@@ -45,6 +44,7 @@ export async function getTransactions(options?: { from?: string; to?: string }):
     const data = doc.data();
     transactions.push({
       id: doc.id,
+      userId: data.userId,
       date: data.date,
       type: data.type,
       category: data.category,
@@ -57,27 +57,43 @@ export async function getTransactions(options?: { from?: string; to?: string }):
   return transactions;
 }
 
-export async function addTransaction(transaction: Omit<Transaction, 'id'>): Promise<Transaction> {
-  // In a real multi-user app, you would add a `userId` field here.
-  // const user = auth.currentUser;
-  // if (!user) throw new Error("User not authenticated");
-  // const dataWithUser = { ...transaction, userId: user.uid };
-  const docRef = await addDoc(transactionsCollection, transaction);
+export async function addTransaction(transaction: Omit<Transaction, 'id' | 'userId'>): Promise<Transaction> {
+  const user = auth.currentUser;
+  if (!user) throw new Error("Usuário não autenticado. Impossível adicionar transação.");
+
+  const dataWithUser = { ...transaction, userId: user.uid };
+  const docRef = await addDoc(transactionsCollection, dataWithUser);
   
   return {
-    ...transaction,
+    ...dataWithUser,
     id: docRef.id,
   };
 }
 
-export async function deleteTransaction(id: string): Promise<{ success: boolean }> {
+export async function deleteTransaction(id: string): Promise<{ success: boolean; error?: string }> {
+  const user = auth.currentUser;
+  if (!user) {
+    return { success: false, error: "Usuário não autenticado." };
+  }
+
   try {
     const docRef = doc(db, 'transactions', id);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      return { success: false, error: "Transação não encontrada." };
+    }
+
+    if (docSnap.data().userId !== user.uid) {
+      // Security check: user is trying to delete someone else's transaction.
+      return { success: false, error: "Permissão negada." };
+    }
+
     await deleteDoc(docRef);
     return { success: true };
   } catch (error) {
-    console.error("Error deleting transaction:", error);
-    return { success: false };
+    console.error("Erro ao excluir a transação:", error);
+    return { success: false, error: "Falha ao excluir a transação." };
   }
 }
 
