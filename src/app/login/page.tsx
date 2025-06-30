@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { signInWithGoogle } from '@/lib/auth';
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import Image from 'next/image';
 
 // Google Icon SVG
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -60,55 +61,67 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md shadow-2xl rounded-2xl">
-        <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-            <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-12 w-12 text-primary"
-            >
-                <circle cx="12" cy="12" r="3" />
-                <circle cx="12" cy="5" r="2" />
-                <circle cx="12" cy="19" r="2" />
-                <circle cx="5" cy="12" r="2" />
-                <circle cx="19" cy="12" r="2" />
-                <circle cx="16.5" cy="7.5" r="2" />
-                <circle cx="7.5" cy="16.5" r="2" />
-                <circle cx="16.5" cy="16.5" r="2" />
-                <circle cx="7.5" cy="7.5" r="2" />
-            </svg>
-            </div>
-          <CardTitle className="text-2xl">Bem-vinda ao Alines Finances</CardTitle>
-          <CardDescription>Acesse sua conta para gerenciar suas finanças.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {!isFirebaseConfigured ? (
-            <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-center text-sm text-destructive">
-                <p className="font-semibold">Configuração do Firebase Incompleta</p>
-                <p className="mt-1 text-xs">Por favor, preencha todas as variáveis de ambiente `NEXT_PUBLIC_FIREBASE_*` no arquivo `.env` para habilitar o login.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <Button onClick={handleLogin} disabled={isLoading} className="w-full">
-                {isLoading ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <GoogleIcon className="mr-2" />
-                )}
-                {isLoading ? 'Entrando...' : 'Entrar com Google'}
-              </Button>
-              {error && <p className="text-sm text-center font-medium text-destructive">{error}</p>}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+    <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2">
+      <div className="flex items-center justify-center p-4 py-12">
+        <Card className="w-full max-w-md shadow-2xl rounded-2xl">
+          <CardHeader className="text-center">
+              <div className="flex justify-center mb-4">
+              <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-12 w-12 text-primary"
+              >
+                  <circle cx="12" cy="12" r="3" />
+                  <circle cx="12" cy="5" r="2" />
+                  <circle cx="12" cy="19" r="2" />
+                  <circle cx="5" cy="12" r="2" />
+                  <circle cx="19" cy="12" r="2" />
+                  <circle cx="16.5" cy="7.5" r="2" />
+                  <circle cx="7.5" cy="16.5" r="2" />
+                  <circle cx="16.5" cy="16.5" r="2" />
+                  <circle cx="7.5" cy="7.5" r="2" />
+              </svg>
+              </div>
+            <CardTitle className="text-2xl">Bem-vinda ao Alines Finances</CardTitle>
+            <CardDescription>Acesse sua conta para gerenciar suas finanças.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {!isFirebaseConfigured ? (
+              <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-center text-sm text-destructive">
+                  <p className="font-semibold">Configuração do Firebase Incompleta</p>
+                  <p className="mt-1 text-xs">Por favor, preencha todas as variáveis de ambiente \`NEXT_PUBLIC_FIREBASE_*\` no arquivo \`.env\` para habilitar o login.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <Button onClick={handleLogin} disabled={isLoading} className="w-full">
+                  {isLoading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <GoogleIcon className="mr-2" />
+                  )}
+                  {isLoading ? 'Entrando...' : 'Entrar com Google'}
+                </Button>
+                {error && <p className="text-sm text-center font-medium text-destructive">{error}</p>}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+      <div className="hidden lg:block relative">
+        <Image
+          src="https://placehold.co/1280x1800.png"
+          data-ai-hint="aesthetics clinic"
+          alt="Imagem de uma clínica de estética"
+          width={1280}
+          height={1800}
+          className="h-full w-full object-cover"
+        />
+      </div>
     </div>
   );
 }
