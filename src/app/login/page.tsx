@@ -1,6 +1,5 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { signInWithGoogle } from '@/lib/auth';
@@ -28,9 +27,21 @@ export default function LoginPage() {
     try {
       await signInWithGoogle();
       // AuthProvider will handle the redirect to '/'
-    } catch (err) {
-      setError('Falha ao fazer login. Tente novamente.');
-      console.error(err);
+    } catch (err: any) {
+      let errorMessage = 'Falha ao fazer login. Verifique sua conexão e tente novamente.';
+      if (err.code === 'auth/operation-not-allowed') {
+        errorMessage = 'Login com Google não está habilitado no Firebase. Verifique as configurações do seu projeto.';
+      } else if (err.code === 'auth/popup-closed-by-user') {
+        errorMessage = 'A janela de login foi fechada antes da conclusão. Tente novamente.';
+      } else if (err.code === 'auth/cancelled-popup-request') {
+        // This can happen if the popup is opened again before the first one is closed
+        setIsLoading(false);
+        return; // Don't show an error message
+      } else {
+        console.error('Firebase Auth Error:', err);
+        errorMessage = 'Ocorreu um erro inesperado. Verifique o console para mais detalhes.';
+      }
+      setError(errorMessage);
       setIsLoading(false);
     }
   };
