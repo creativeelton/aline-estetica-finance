@@ -120,7 +120,7 @@ export default function LoginPage() {
             strokeWidth="0.5"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="h-[500px] w-[500px] text-primary/10 absolute -rotate-12"
+            className="h-[500px] w-[500px] text-primary opacity-50 absolute -rotate-12"
         >
             <circle cx="12" cy="12" r="3" />
             <circle cx="12" cy="5" r="2" />
