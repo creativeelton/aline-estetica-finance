@@ -1,13 +1,18 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useTransition } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import type { Transaction } from '@/types';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Loader2, Trash2 } from 'lucide-react';
+import { deleteTransactionAction } from '@/app/resumo/actions';
+import { useToast } from '@/hooks/use-toast';
 
 const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -15,10 +20,12 @@ const formatCurrency = (value: number) => {
 
 export function SummaryTable({ transactions }: { transactions: Transaction[] }) {
     const [selectedMonth, setSelectedMonth] = useState<string>('all');
+    const [isPending, startTransition] = useTransition();
+    const { toast } = useToast();
 
     const availableMonths = useMemo(() => {
         const months = new Set<string>();
-        transactions.forEach(t => months.add(format(t.date, 'yyyy-MM')));
+        transactions.forEach(t => months.add(format(new Date(t.date), 'yyyy-MM')));
         return Array.from(months).sort().reverse();
     }, [transactions]);
 
@@ -26,7 +33,7 @@ export function SummaryTable({ transactions }: { transactions: Transaction[] }) 
         if (selectedMonth === 'all') {
             return transactions;
         }
-        return transactions.filter(t => format(t.date, 'yyyy-MM') === selectedMonth);
+        return transactions.filter(t => format(new Date(t.date), 'yyyy-MM') === selectedMonth);
     }, [transactions, selectedMonth]);
 
     const summary = useMemo(() => {
@@ -39,12 +46,30 @@ export function SummaryTable({ transactions }: { transactions: Transaction[] }) 
 
     const balance = summary.totalIncome - summary.totalExpense;
 
+    const handleDelete = (transactionId: string) => {
+        startTransition(async () => {
+            const result = await deleteTransactionAction(transactionId);
+            if (result.success) {
+                toast({
+                    title: "Sucesso!",
+                    description: "Lançamento excluído.",
+                });
+            } else {
+                toast({
+                    variant: "destructive",
+                    title: "Erro",
+                    description: result.error || "Não foi possível excluir o lançamento.",
+                });
+            }
+        });
+    };
+
     return (
         <Card className="rounded-2xl shadow-lg">
             <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between">
                 <div>
                     <CardTitle>Resumo de Lançamentos</CardTitle>
-                    <CardDescription>Visualize e filtre todas as suas transações.</CardDescription>
+                    <CardDescription>Visualize, filtre e gerencie todas as suas transações.</CardDescription>
                 </div>
                 <div className="w-full md:w-auto md:min-w-[180px] mt-4 md:mt-0">
                     <Select value={selectedMonth} onValueChange={setSelectedMonth}>
@@ -55,7 +80,7 @@ export function SummaryTable({ transactions }: { transactions: Transaction[] }) 
                             <SelectItem value="all">Todos os Meses</SelectItem>
                             {availableMonths.map(month => (
                                 <SelectItem key={month} value={month}>
-                                    {format(new Date(`${month}-02`), 'MMMM yyyy', { locale: ptBR })}
+                                    {format(new Date(`${month}-02T12:00:00Z`), 'MMMM yyyy', { locale: ptBR })}
                                 </SelectItem>
                             ))}
                         </SelectContent>
@@ -87,22 +112,51 @@ export function SummaryTable({ transactions }: { transactions: Transaction[] }) 
                                 <TableHead>Categoria</TableHead>
                                 <TableHead>Pagamento</TableHead>
                                 <TableHead className="text-right">Valor</TableHead>
+                                <TableHead className="w-[100px] text-center">Ações</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {filteredTransactions.length > 0 ? filteredTransactions.map((t) => (
                                 <TableRow key={t.id} className={t.type === 'income' ? 'bg-emerald-50/30 dark:bg-emerald-900/10' : 'bg-rose-50/30 dark:bg-rose-900/10'}>
-                                    <TableCell>{format(t.date, 'dd/MM/yyyy')}</TableCell>
+                                    <TableCell>{format(new Date(t.date), 'dd/MM/yyyy')}</TableCell>
                                     <TableCell className="font-medium">{t.description}</TableCell>
                                     <TableCell><Badge variant="outline">{t.category}</Badge></TableCell>
                                     <TableCell>{t.paymentMethod}</TableCell>
                                     <TableCell className={`text-right font-semibold ${t.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                                         {formatCurrency(t.amount)}
                                     </TableCell>
+                                    <TableCell className="text-center">
+                                       <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="ghost" size="icon" disabled={isPending}>
+                                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                                    <span className="sr-only">Excluir</span>
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        Essa ação não pode ser desfeita. Isso excluirá permanentemente o lançamento.
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                    <AlertDialogAction
+                                                        onClick={() => handleDelete(t.id)}
+                                                        className="bg-destructive hover:bg-destructive/90"
+                                                        disabled={isPending}
+                                                    >
+                                                        {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Excluir'}
+                                                    </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </TableCell>
                                 </TableRow>
                             )) : (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center h-24">Nenhum lançamento encontrado.</TableCell>
+                                    <TableCell colSpan={6} className="text-center h-24">Nenhum lançamento encontrado.</TableCell>
                                 </TableRow>
                             )}
                         </TableBody>

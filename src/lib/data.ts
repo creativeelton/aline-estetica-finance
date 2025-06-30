@@ -2,32 +2,38 @@
 import { type Transaction, type Summary } from '@/types';
 
 let transactions: Transaction[] = [
-  { id: '1', date: new Date('2024-05-01'), type: 'income', category: 'Serviço de Estética', amount: 350, paymentMethod: 'Pix', description: 'Design de sobrancelha' },
-  { id: '2', date: new Date('2024-05-03'), type: 'expense', category: 'Aluguel', amount: 1200, paymentMethod: 'Boleto', description: 'Aluguel do estúdio' },
-  { id: '3', date: new Date('2024-05-05'), type: 'expense', category: 'Produtos', amount: 250, paymentMethod: 'Cartão de Crédito', description: 'Compra de ceras e cremes' },
-  { id: '4', date: new Date('2024-05-10'), type: 'income', category: 'Venda de Produto', amount: 120, paymentMethod: 'Dinheiro', description: 'Venda de creme hidratante' },
-  { id: '5', date: new Date('2024-05-15'), type: 'expense', category: 'Descartáveis', amount: 80, paymentMethod: 'Pix', description: 'Luvas, toucas, etc.' },
-  { id: '6', date: new Date('2024-06-01'), type: 'income', category: 'Serviço de Estética', amount: 450, paymentMethod: 'Pix', description: 'Limpeza de pele' },
-  { id: '7', date: new Date('2024-06-03'), type: 'expense', category: 'Aluguel', amount: 1200, paymentMethod: 'Boleto', description: 'Aluguel do estúdio' },
+  { id: '1', date: new Date('2024-05-01').toISOString(), type: 'income', category: 'Serviço de Estética', amount: 350, paymentMethod: 'Pix', description: 'Design de sobrancelha' },
+  { id: '2', date: new Date('2024-05-03').toISOString(), type: 'expense', category: 'Aluguel', amount: 1200, paymentMethod: 'Boleto', description: 'Aluguel do estúdio' },
+  { id: '3', date: new Date('2024-05-05').toISOString(), type: 'expense', category: 'Produtos', amount: 250, paymentMethod: 'Cartão de Crédito', description: 'Compra de ceras e cremes' },
+  { id: '4', date: new Date('2024-05-10').toISOString(), type: 'income', category: 'Venda de Produto', amount: 120, paymentMethod: 'Dinheiro', description: 'Venda de creme hidratante' },
+  { id: '5', date: new Date('2024-05-15').toISOString(), type: 'expense', category: 'Descartáveis', amount: 80, paymentMethod: 'Pix', description: 'Luvas, toucas, etc.' },
+  { id: '6', date: new Date('2024-06-01').toISOString(), type: 'income', category: 'Serviço de Estética', amount: 450, paymentMethod: 'Pix', description: 'Limpeza de pele' },
+  { id: '7', date: new Date('2024-06-03').toISOString(), type: 'expense', category: 'Aluguel', amount: 1200, paymentMethod: 'Boleto', description: 'Aluguel do estúdio' },
 ];
 
 export async function getTransactions(): Promise<Transaction[]> {
   // In a real app, you'd fetch this from Firestore
-  return Promise.resolve(transactions.sort((a, b) => b.date.getTime() - a.date.getTime()));
+  return Promise.resolve(transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
 }
 
 export async function getTransactionById(id: string): Promise<Transaction | undefined> {
   return Promise.resolve(transactions.find(t => t.id === id));
 }
 
-export async function addTransaction(transaction: Omit<Transaction, 'id' | 'date'> & { date: string }): Promise<Transaction> {
+export async function addTransaction(transaction: Omit<Transaction, 'id'>): Promise<Transaction> {
   const newTransaction: Transaction = {
     ...transaction,
-    id: (transactions.length + 1).toString(),
-    date: new Date(transaction.date),
+    id: (transactions.length + 2).toString(),
   };
   transactions.unshift(newTransaction);
   return Promise.resolve(newTransaction);
+}
+
+export async function deleteTransaction(id: string): Promise<{ success: boolean }> {
+    const initialLength = transactions.length;
+    transactions = transactions.filter(t => t.id !== id);
+    const success = transactions.length < initialLength;
+    return Promise.resolve({ success });
 }
 
 export async function getSummary(): Promise<Summary> {
