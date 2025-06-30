@@ -19,19 +19,23 @@ import { useAuth } from '@/contexts/auth-context';
 export function AppSidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
-  const [theme, setTheme] = useState('light');
+  const [theme, setTheme] = useState<string | null>(null);
 
   useEffect(() => {
-    const storedTheme = typeof window !== 'undefined' ? localStorage.getItem('theme') || 'light' : 'light';
+    const storedTheme = localStorage.getItem('theme') || 'light';
     setTheme(storedTheme);
-    document.documentElement.classList.toggle('dark', storedTheme === 'dark');
   }, []);
+
+  useEffect(() => {
+    if (theme) {
+      document.documentElement.classList.toggle('dark', theme === 'dark');
+    }
+  }, [theme]);
 
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(newTheme);
     localStorage.setItem('theme', newTheme);
-    document.documentElement.classList.toggle('dark', newTheme === 'dark');
   };
 
   const handleSignOut = async () => {
@@ -92,7 +96,7 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton onClick={toggleTheme} className="justify-start">
-              {theme === 'light' ? <Moon /> : <Sun />}
+              {theme === 'light' ? <Moon /> : theme === 'dark' ? <Sun /> : null}
               <span>Mudar Tema</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
