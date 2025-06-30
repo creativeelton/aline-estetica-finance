@@ -62,7 +62,7 @@ export default function LoginPage() {
   return (
     <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2">
       <div className="flex items-center justify-center p-4 py-12">
-        <Card className="w-full max-w-md shadow-2xl rounded-2xl">
+        <Card className="w-full max-w-md">
           <CardHeader className="text-center">
               <div className="flex justify-center mb-4">
               <svg
@@ -111,7 +111,7 @@ export default function LoginPage() {
           </CardContent>
         </Card>
       </div>
-      <div className="hidden bg-muted lg:flex items-center justify-center p-6 relative overflow-hidden">
+      <div className="hidden lg:flex items-center justify-center p-6 relative overflow-hidden">
         <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
