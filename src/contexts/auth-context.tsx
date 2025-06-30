@@ -45,13 +45,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [user, loading, pathname, router]);
 
+  if (loading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+  
+  const isAuthPage = pathname === '/login';
+
+  if ((!user && !isAuthPage) || (user && isAuthPage)) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <AuthContext.Provider value={{ user, loading }}>
-        {(loading || (user && pathname === '/login') || (!user && pathname !== '/login')) ? (
-             <div className="flex h-screen w-full items-center justify-center bg-background">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-        ) : !user ? (
+        {!user ? (
             <>{children}</>
         ) : (
             <SidebarProvider>
