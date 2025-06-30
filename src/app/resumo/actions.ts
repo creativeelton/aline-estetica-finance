@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { deleteTransaction, getTransactions } from "@/lib/data";
 import { revalidatePath } from "next/cache";
-import { PDFDocument, rgb, StandardFonts, PageSizes } from "pdf-lib";
+import { PDFDocument, rgb, StandardFonts, PageSizes, PDFFont, PDFPage } from "pdf-lib";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -100,8 +100,37 @@ const pdfReportSchema = z.object({
           let page = pdfDoc.addPage(PageSizes.A4);
           const { width, height } = page.getSize();
           const margin = 40;
+
+          const drawLogo = (page: PDFPage, centerX: number, centerY: number, size: number, color: any) => {
+            const scale = size / 24;
+            const circles = [
+                { cx: 12, cy: 12, r: 3 },
+                { cx: 12, cy: 5, r: 2 },
+                { cx: 12, cy: 19, r: 2 },
+                { cx: 5, cy: 12, r: 2 },
+                { cx: 19, cy: 12, r: 2 },
+                { cx: 16.5, cy: 7.5, r: 2 },
+                { cx: 7.5, cy: 16.5, r: 2 },
+                { cx: 16.5, cy: 16.5, r: 2 },
+                { cx: 7.5, cy: 7.5, r: 2 },
+            ];
+        
+            circles.forEach(circle => {
+                const pdfCx = centerX + (circle.cx - 12) * scale;
+                const pdfCy = centerY + (12 - circle.cy) * scale; // pdf-lib y-axis is bottom-up
+                const pdfR = circle.r * scale;
+        
+                page.drawCircle({
+                    x: pdfCx,
+                    y: pdfCy,
+                    size: pdfR,
+                    borderColor: color,
+                    borderWidth: 1.5,
+                });
+            });
+        };
   
-          const drawPageContent = (currentPage: any, isFirstPage: boolean) => {
+          const drawPageContent = (currentPage: PDFPage, isFirstPage: boolean) => {
             let y = height;
             // === HEADER ===
             if(isFirstPage) {
@@ -126,6 +155,12 @@ const pdfReportSchema = z.object({
                 size: 12,
                 color: whiteColor,
               });
+              
+              const logoSize = 50;
+              const logoX = width - margin - (logoSize / 2);
+              const logoY = height - 65;
+              drawLogo(currentPage, logoX, logoY, logoSize, whiteColor);
+              
               y = height - 130;
   
               // === SUMMARY CARDS ===
@@ -165,7 +200,7 @@ const pdfReportSchema = z.object({
           const colStarts = [margin, margin + 80, margin + 270, margin + 370, margin + 450];
           const tableHeaderHeight = 25;
 
-          const drawTableHeader = (currentPage: any, yPos: number) => {
+          const drawTableHeader = (currentPage: PDFPage, yPos: number) => {
             currentPage.drawRectangle({ x: margin, y: yPos - tableHeaderHeight, width: width - margin * 2, height: tableHeaderHeight, color: tableHeaderBg });
             colStarts.forEach((xPos, i) => {
                 currentPage.drawText(tableHeaders[i], { x: xPos + 5, y: yPos - 17, font: boldFont, size: 10, color: mutedTextColor });
