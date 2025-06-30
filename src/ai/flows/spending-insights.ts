@@ -1,11 +1,11 @@
 'use server';
 
 /**
- * @fileOverview An AI agent that provides spending insights by analyzing expense descriptions and categorizing spending patterns.
+ * @fileOverview Um agente de IA que fornece insights de gastos analisando descrições de despesas e categorizando padrões de gastos.
  *
- * - getSpendingInsights - A function that handles the spending insights process.
- * - SpendingInsightsInput - The input type for the getSpendingInsights function.
- * - SpendingInsightsOutput - The return type for the getSpendingInsights function.
+ * - getSpendingInsights - A função que lida com o processo de insights de gastos.
+ * - SpendingInsightsInput - O tipo de entrada para a função getSpendingInsights.
+ * - SpendingInsightsOutput - O tipo de retorno para a função getSpendingInsights.
  */
 
 import {ai} from '@/ai/genkit';
@@ -14,9 +14,9 @@ import {z} from 'genkit';
 const SpendingInsightsInputSchema = z.object({
   expenseDescription: z
     .string()
-    .describe('The description of the expense, e.g., \'Rent for studio space\'.'),
-  expenseCategory: z.string().describe('The category of the expense, e.g., \'Rent\'.'),
-  expenseValue: z.number().describe('The value of the expense.'),
+    .describe("A descrição da despesa, ex: 'Aluguel do espaço do estúdio'."),
+  expenseCategory: z.string().describe("A categoria da despesa, ex: 'Aluguel'."),
+  expenseValue: z.number().describe('O valor da despesa.'),
 });
 export type SpendingInsightsInput = z.infer<typeof SpendingInsightsInputSchema>;
 
@@ -24,7 +24,7 @@ const SpendingInsightsOutputSchema = z.object({
   spendingInsight: z
     .string()
     .describe(
-      'An insight about the spending pattern based on the expense description and category.'
+      'Um insight sobre o padrão de gastos com base na descrição e categoria da despesa.'
     ),
 });
 export type SpendingInsightsOutput = z.infer<typeof SpendingInsightsOutputSchema>;
@@ -37,13 +37,13 @@ const prompt = ai.definePrompt({
   name: 'spendingInsightsPrompt',
   input: {schema: SpendingInsightsInputSchema},
   output: {schema: SpendingInsightsOutputSchema},
-  prompt: `You are a financial advisor specializing in providing spending insights for small businesses.
+  prompt: `Você é um consultor financeiro especializado em fornecer insights de gastos para pequenas empresas do ramo de estética.
 
-  Analyze the following expense description, category, and value to provide a concise and actionable insight.
+  Analise a descrição, categoria e valor da despesa a seguir para fornecer um insight conciso e prático. A resposta DEVE ser em português do Brasil.
 
-  Description: {{{expenseDescription}}}
-  Category: {{{expenseCategory}}}
-  Value: {{{expenseValue}}}
+  Descrição: {{{expenseDescription}}}
+  Categoria: {{{expenseCategory}}}
+  Valor: {{{expenseValue}}}
 
   Insight:`,
 });
