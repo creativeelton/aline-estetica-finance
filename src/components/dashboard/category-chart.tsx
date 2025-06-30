@@ -1,5 +1,5 @@
 "use client";
-import { Bar, BarChart, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, XAxis, YAxis, Cell } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import type { Transaction } from '@/types';
@@ -16,9 +16,19 @@ const formatCurrencyForTooltip = (value: number) => {
     }).format(value);
   };
 
+// Define a color palette for the chart bars
+const COLORS = [
+    "hsl(var(--chart-1))",
+    "hsl(var(--chart-2))",
+    "hsl(var(--chart-3))",
+    "hsl(var(--chart-4))",
+    "hsl(var(--chart-5))",
+    "hsl(var(--accent))",
+  ];
+
 export function CategoryChart({ transactions }: Props) {
   const chartData = useMemo(() => {
-    return transactions
+    const categoryTotals = transactions
       .filter((t) => t.type === 'expense')
       .reduce((acc, t) => {
         const existing = acc.find((item) => item.category === t.category);
@@ -30,12 +40,16 @@ export function CategoryChart({ transactions }: Props) {
         return acc;
       }, [] as { category: string; total: number }[])
       .sort((a,b) => b.total - a.total);
+      
+    return categoryTotals.map((item, index) => ({
+        ...item,
+        fill: COLORS[index % COLORS.length]
+    }));
   }, [transactions]);
   
   const chartConfig = {
     total: {
       label: "Total",
-      color: "hsl(var(--primary))",
     },
     category: {
         label: "Categoria",
@@ -66,7 +80,11 @@ export function CategoryChart({ transactions }: Props) {
                     cursor={false}
                     content={<ChartTooltipContent hideLabel formatter={(value) => formatCurrencyForTooltip(Number(value))} />}
                 />
-                <Bar dataKey="total" fill="var(--color-total)" radius={5} />
+                <Bar dataKey="total" radius={5}>
+                    {chartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                </Bar>
             </BarChart>
           </ChartContainer>
         ) : (
