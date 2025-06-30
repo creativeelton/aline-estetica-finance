@@ -35,6 +35,8 @@ export function NewTransactionForm() {
         defaultValues: {
             description: "",
             type: undefined,
+            date: undefined,
+            amount: undefined,
             category: "",
             paymentMethod: "",
         },
@@ -77,7 +79,7 @@ export function NewTransactionForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Tipo</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger className={cn(
                         !field.value && "text-muted-foreground",
@@ -141,7 +143,7 @@ export function NewTransactionForm() {
                 <FormItem>
                     <FormLabel>Valor</FormLabel>
                     <FormControl>
-                        <Input type="number" placeholder="0,00" {...field} step="0.01" />
+                        <Input type="number" placeholder="0,00" {...field} value={field.value ?? ""} step="0.01" />
                     </FormControl>
                     <FormMessage />
                 </FormItem>
@@ -155,7 +157,7 @@ export function NewTransactionForm() {
                 render={({ field }) => (
                 <FormItem>
                     <FormLabel>Categoria</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                         <SelectTrigger><SelectValue placeholder="Selecione a categoria" /></SelectTrigger>
                     </FormControl>
@@ -175,7 +177,7 @@ export function NewTransactionForm() {
                 render={({ field }) => (
                 <FormItem>
                     <FormLabel>Forma de Pagamento</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                         <SelectTrigger><SelectValue placeholder="Selecione a forma de pagamento" /></SelectTrigger>
                     </FormControl>
