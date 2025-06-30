@@ -1,7 +1,12 @@
 // MOCK DATA
 import { type Transaction, type Summary } from '@/types';
 
-let transactions: Transaction[] = [
+// Use globalThis to preserve the array across hot reloads in development
+declare global {
+  var __transactions: Transaction[] | undefined;
+}
+
+const initialTransactions: Transaction[] = [
   { id: '1', date: new Date('2024-05-01').toISOString(), type: 'income', category: 'Serviço de Estética', amount: 350, paymentMethod: 'Pix', description: 'Design de sobrancelha' },
   { id: '2', date: new Date('2024-05-03').toISOString(), type: 'expense', category: 'Aluguel', amount: 1200, paymentMethod: 'Boleto', description: 'Aluguel do estúdio' },
   { id: '3', date: new Date('2024-05-05').toISOString(), type: 'expense', category: 'Produtos', amount: 250, paymentMethod: 'Cartão de Crédito', description: 'Compra de ceras e cremes' },
@@ -11,9 +16,23 @@ let transactions: Transaction[] = [
   { id: '7', date: new Date('2024-06-03').toISOString(), type: 'expense', category: 'Aluguel', amount: 1200, paymentMethod: 'Boleto', description: 'Aluguel do estúdio' },
 ];
 
+if (process.env.NODE_ENV === 'development') {
+    if (!globalThis.__transactions) {
+        globalThis.__transactions = [...initialTransactions];
+    }
+} else {
+    // In production, you'd use a real database. We'll initialize it if it doesn't exist.
+    if (!globalThis.__transactions) {
+        globalThis.__transactions = [...initialTransactions];
+    }
+}
+
+const transactionsDB = globalThis.__transactions;
+
+
 export async function getTransactions(options?: { from?: string; to?: string }): Promise<Transaction[]> {
   // In a real app, you'd fetch this from Firestore with where clauses
-  let filteredTransactions = transactions;
+  let filteredTransactions = transactionsDB;
 
   if (options?.from && options?.to) {
     const fromDate = new Date(options.from);
@@ -21,38 +40,43 @@ export async function getTransactions(options?: { from?: string; to?: string }):
     const toDate = new Date(options.to);
     toDate.setHours(23, 59, 59, 999); // End of the day
 
-    filteredTransactions = transactions.filter(t => {
+    filteredTransactions = transactionsDB.filter(t => {
         const tDate = new Date(t.date);
         return tDate >= fromDate && tDate <= toDate;
     });
   }
 
-  return Promise.resolve(filteredTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+  return Promise.resolve([...filteredTransactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
 }
 
 
 export async function getTransactionById(id: string): Promise<Transaction | undefined> {
-  return Promise.resolve(transactions.find(t => t.id === id));
+  return Promise.resolve(transactionsDB.find(t => t.id === id));
 }
 
 export async function addTransaction(transaction: Omit<Transaction, 'id'>): Promise<Transaction> {
   const newTransaction: Transaction = {
     ...transaction,
-    id: (transactions.length + 2).toString(),
+    id: Date.now().toString() + Math.random().toString(), // More reliable ID
   };
-  transactions.unshift(newTransaction);
+  transactionsDB.unshift(newTransaction);
   return Promise.resolve(newTransaction);
 }
 
 export async function deleteTransaction(id: string): Promise<{ success: boolean }> {
-    const initialLength = transactions.length;
-    transactions = transactions.filter(t => t.id !== id);
-    const success = transactions.length < initialLength;
+    const initialLength = transactionsDB.length;
+    const indexToDelete = transactionsDB.findIndex(t => t.id === id);
+
+    if (indexToDelete > -1) {
+        transactionsDB.splice(indexToDelete, 1);
+    }
+    
+    const success = transactionsDB.length < initialLength;
     return Promise.resolve({ success });
 }
 
 export async function getSummary(): Promise<Summary> {
-  const summary = transactions.reduce((acc, t) => {
+  const summary = transactionsDB.reduce((acc, t) => {
     if (t.type === 'income') {
       acc.totalIncome += t.amount;
     } else {
