@@ -69,13 +69,17 @@ export default function LoginPage() {
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
-                strokeWidth="2"
+                strokeWidth="1.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 className="h-12 w-12 text-primary"
             >
-                <path d="M6.5 12.5C6.5 11.3954 7.39543 10.5 8.5 10.5H15.5C16.6046 10.5 17.5 11.3954 17.5 12.5V17.5C17.5 18.6046 16.6046 19.5 15.5 19.5H8.5C7.39543 19.5 6.5 18.6046 6.5 17.5V12.5Z" />
-                <path d="M9.5 10.5V7.5C9.5 5.84315 10.8431 4.5 12.5 4.5C14.1569 4.5 15.5 5.84315 15.5 7.5V10.5" />
+                <path d="M12 2.69l.346.666L12 4l-.346-.644L12 2.69z" />
+                <path d="M4 12l.666-.346L4 12l-.644.346L4 12zM12 21.31l-.346-.666L12 20l.346.644L12 21.31zM20 12l-.666.346L20 12l.644-.346L20 12z" />
+                <path d="M5 5a7 7 0 0 0 7 7 7 7 0 0 0 7-7" />
+                <path d="M5 19a7 7 0 0 1 7-7 7 7 0 0 1 7 7" />
+                <path d="M19 5a7 7 0 0 1-7 7 7 7 0 0 1-7-7" />
+                <path d="M19 19a7 7 0 0 0-7-7 7 7 0 0 0-7 7" />
             </svg>
             </div>
           <CardTitle className="text-2xl">Bem-vinda ao Alines Finances</CardTitle>
