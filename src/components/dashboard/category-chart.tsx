@@ -1,5 +1,5 @@
 "use client";
-import { Bar, BarChart } from 'recharts';
+import { Bar, BarChart, XAxis, YAxis } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import type { Transaction } from '@/types';
@@ -8,6 +8,13 @@ import { useMemo } from 'react';
 type Props = {
   transactions: Transaction[];
 };
+
+const formatCurrencyForTooltip = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(value);
+  };
 
 export function CategoryChart({ transactions }: Props) {
   const chartData = useMemo(() => {
@@ -21,7 +28,8 @@ export function CategoryChart({ transactions }: Props) {
           acc.push({ category: t.category, total: t.amount });
         }
         return acc;
-      }, [] as { category: string; total: number }[]);
+      }, [] as { category: string; total: number }[])
+      .sort((a,b) => b.total - a.total);
   }, [transactions]);
   
   const chartConfig = {
@@ -43,10 +51,20 @@ export function CategoryChart({ transactions }: Props) {
       <CardContent>
         {chartData.length > 0 ? (
           <ChartContainer config={chartConfig} className="min-h-[300px] w-full">
-            <BarChart accessibilityLayer data={chartData} layout="vertical" margin={{ left: 10 }}>
+            <BarChart accessibilityLayer data={chartData} layout="vertical" margin={{ left: 10, right: 30 }}>
+                <XAxis type="number" hide />
+                <YAxis 
+                    dataKey="category" 
+                    type="category" 
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                    tickMargin={5}
+                    width={100}
+                />
                 <ChartTooltip
                     cursor={false}
-                    content={<ChartTooltipContent hideLabel />}
+                    content={<ChartTooltipContent hideLabel formatter={(value) => formatCurrencyForTooltip(Number(value))} />}
                 />
                 <Bar dataKey="total" fill="var(--color-total)" radius={5} />
             </BarChart>
