@@ -21,7 +21,17 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const isFirebaseConfigured = 
+    !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY &&
+    !!process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN &&
+    !!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
+    !!process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET &&
+    !!process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID &&
+    !!process.env.NEXT_PUBLIC_FIREBASE_APP_ID;
+
   const handleLogin = async () => {
+    if (!isFirebaseConfigured) return;
+
     setIsLoading(true);
     setError(null);
     try {
@@ -37,7 +47,10 @@ export default function LoginPage() {
         // This can happen if the popup is opened again before the first one is closed
         setIsLoading(false);
         return; // Don't show an error message
-      } else {
+      } else if (err.code === 'auth/unauthorized-domain') {
+          errorMessage = 'O domínio deste aplicativo não está autorizado no Firebase. Adicione-o na aba Authentication > Settings > Authorized domains.'
+      }
+      else {
         console.error('Firebase Auth Error:', err);
         errorMessage = 'Ocorreu um erro inesperado. Verifique o console para mais detalhes.';
       }
@@ -69,17 +82,24 @@ export default function LoginPage() {
           <CardDescription>Acesse sua conta para gerenciar suas finanças.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <Button onClick={handleLogin} disabled={isLoading} className="w-full">
-              {isLoading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <GoogleIcon className="mr-2" />
-              )}
-              {isLoading ? 'Entrando...' : 'Entrar com Google'}
-            </Button>
-            {error && <p className="text-sm text-center font-medium text-destructive">{error}</p>}
-          </div>
+          {!isFirebaseConfigured ? (
+            <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-center text-sm text-destructive">
+                <p className="font-semibold">Configuração do Firebase Incompleta</p>
+                <p className="mt-1 text-xs">Por favor, preencha todas as variáveis de ambiente `NEXT_PUBLIC_FIREBASE_*` no arquivo `.env` para habilitar o login.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <Button onClick={handleLogin} disabled={isLoading} className="w-full">
+                {isLoading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <GoogleIcon className="mr-2" />
+                )}
+                {isLoading ? 'Entrando...' : 'Entrar com Google'}
+              </Button>
+              {error && <p className="text-sm text-center font-medium text-destructive">{error}</p>}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
