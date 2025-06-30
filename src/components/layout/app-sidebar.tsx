@@ -10,8 +10,7 @@ import {
   SidebarFooter,
 } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
-import { Home, List, PlusCircle, Moon, Sun, LogOut } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { Home, List, PlusCircle, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { signOutUser } from '@/lib/auth';
 import { useAuth } from '@/contexts/auth-context';
@@ -19,24 +18,6 @@ import { useAuth } from '@/contexts/auth-context';
 export function AppSidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
-  const [theme, setTheme] = useState<string | null>(null);
-
-  useEffect(() => {
-    const storedTheme = localStorage.getItem('theme') || 'light';
-    setTheme(storedTheme);
-  }, []);
-
-  useEffect(() => {
-    if (theme) {
-      document.documentElement.classList.toggle('dark', theme === 'dark');
-    }
-  }, [theme]);
-
-  const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
-  };
 
   const handleSignOut = async () => {
     await signOutUser();
@@ -101,12 +82,6 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton onClick={toggleTheme} className="justify-start">
-              {theme === 'light' ? <Moon /> : theme === 'dark' ? <Sun /> : null}
-              <span>Mudar Tema</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton onClick={handleSignOut} className="justify-start">
               <LogOut />
