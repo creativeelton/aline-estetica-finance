@@ -58,12 +58,15 @@ export function AppSidebar() {
                 strokeLinejoin="round"
                 className="h-8 w-8 text-primary"
             >
-                <path d="M12 2.69l.346.666L12 4l-.346-.644L12 2.69z" />
-                <path d="M4 12l.666-.346L4 12l-.644.346L4 12zM12 21.31l-.346-.666L12 20l.346.644L12 21.31zM20 12l-.666.346L20 12l.644-.346L20 12z" />
-                <path d="M5 5a7 7 0 0 0 7 7 7 7 0 0 0 7-7" />
-                <path d="M5 19a7 7 0 0 1 7-7 7 7 0 0 1 7 7" />
-                <path d="M19 5a7 7 0 0 1-7 7 7 7 0 0 1-7-7" />
-                <path d="M19 19a7 7 0 0 0-7-7 7 7 0 0 0-7 7" />
+                <circle cx="12" cy="12" r="3" />
+                <circle cx="12" cy="5" r="2" />
+                <circle cx="12" cy="19" r="2" />
+                <circle cx="5" cy="12" r="2" />
+                <circle cx="19" cy="12" r="2" />
+                <circle cx="16.5" cy="7.5" r="2" />
+                <circle cx="7.5" cy="16.5" r="2" />
+                <circle cx="16.5" cy="16.5" r="2" />
+                <circle cx="7.5" cy="7.5" r="2" />
             </svg>
           <h1 className="text-xl font-bold font-headline">Alines Finances</h1>
         </div>
