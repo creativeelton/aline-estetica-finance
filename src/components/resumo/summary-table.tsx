@@ -10,7 +10,6 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import type { Transaction } from '@/types';
 import { format, subDays } from 'date-fns';
-import type { DateRange } from 'react-day-picker';
 import { ptBR } from 'date-fns/locale';
 import { Loader2, Trash2, Calendar as CalendarIcon, FileDown } from 'lucide-react';
 import { deleteTransactionAction, generatePdfReportAction } from '@/app/resumo/actions';
@@ -22,28 +21,35 @@ const formatCurrency = (value: number) => {
 };
 
 export function SummaryTable({ transactions }: { transactions: Transaction[] }) {
-    const [date, setDate] = useState<DateRange | undefined>({
-      from: subDays(new Date(), 29),
-      to: new Date(),
-    });
+    const [startDate, setStartDate] = useState<Date | undefined>(subDays(new Date(), 29));
+    const [endDate, setEndDate] = useState<Date | undefined>(new Date());
     const [isDeleting, startDeleteTransition] = useTransition();
     const [isGeneratingPdf, startPdfTransition] = useTransition();
     const { toast } = useToast();
 
-    const filteredTransactions = useMemo(() => {
-        if (!date?.from || !date?.to) {
-            return transactions;
-        }
-        const from = date.from;
-        from.setHours(0, 0, 0, 0);
-        const to = date.to;
-        to.setHours(23, 59, 59, 999);
+    const isInvalidDateRange = useMemo(() => {
+      return startDate && endDate && startDate > endDate;
+    }, [startDate, endDate]);
 
-        return transactions.filter(t => {
-            const tDate = new Date(t.date);
-            return tDate >= from && tDate <= to;
-        });
-    }, [transactions, date]);
+    const filteredTransactions = useMemo(() => {
+        if (isInvalidDateRange) {
+            return [];
+        }
+
+        if (startDate && endDate) {
+            const from = new Date(startDate);
+            from.setHours(0, 0, 0, 0);
+            const to = new Date(endDate);
+            to.setHours(23, 59, 59, 999);
+
+            return transactions.filter(t => {
+                const tDate = new Date(t.date);
+                return tDate >= from && tDate <= to;
+            });
+        }
+        
+        return transactions;
+    }, [transactions, startDate, endDate, isInvalidDateRange]);
 
     const summary = useMemo(() => {
         return filteredTransactions.reduce((acc, t) => {
@@ -74,21 +80,29 @@ export function SummaryTable({ transactions }: { transactions: Transaction[] }) 
     };
 
     const handleGeneratePdf = () => {
-      if (!date?.from || !date?.to) {
+      if (!startDate || !endDate) {
         toast({
             variant: "destructive",
             title: "Erro",
-            description: "Por favor, selecione um intervalo de datas.",
+            description: "Por favor, selecione as datas de início e fim.",
+        });
+        return;
+      }
+      if (isInvalidDateRange) {
+        toast({
+            variant: "destructive",
+            title: "Erro de data",
+            description: "A data de início não pode ser posterior à data de fim.",
         });
         return;
       }
 
       startPdfTransition(async () => {
-        const result = await generatePdfReportAction({ from: date.from!, to: date.to! });
+        const result = await generatePdfReportAction({ from: startDate, to: endDate });
         if (result.success && result.pdfData) {
             const link = document.createElement('a');
             link.href = `data:application/pdf;base64,${result.pdfData}`;
-            link.download = `relatorio-financeiro-${format(date.from!, 'yyyy-MM-dd')}-a-${format(date.to!, 'yyyy-MM-dd')}.pdf`;
+            link.download = `relatorio-financeiro-${format(startDate, 'yyyy-MM-dd')}-a-${format(endDate, 'yyyy-MM-dd')}.pdf`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -119,33 +133,51 @@ export function SummaryTable({ transactions }: { transactions: Transaction[] }) 
                         <Button
                           variant={"outline"}
                           className={cn(
-                            "w-full sm:w-[260px] justify-start text-left font-normal",
-                            !date && "text-muted-foreground"
+                            "w-full sm:w-[180px] justify-start text-left font-normal",
+                            !startDate && "text-muted-foreground"
                           )}
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
-                          {date?.from ? (
-                            date.to ? (
-                              <>
-                                {format(date.from, "LLL dd, y", { locale: ptBR })} -{" "}
-                                {format(date.to, "LLL dd, y", { locale: ptBR })}
-                              </>
-                            ) : (
-                              format(date.from, "LLL dd, y", { locale: ptBR })
-                            )
+                          {startDate ? (
+                            format(startDate, "PPP", { locale: ptBR })
                           ) : (
-                            <span>Escolha um período</span>
+                            <span>Data de Início</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          initialFocus
+                          mode="single"
+                          selected={startDate}
+                          onSelect={setStartDate}
+                          locale={ptBR}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-full sm:w-[180px] justify-start text-left font-normal",
+                            !endDate && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {endDate ? (
+                            format(endDate, "PPP", { locale: ptBR })
+                          ) : (
+                            <span>Data de Fim</span>
                           )}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="end">
                         <Calendar
                           initialFocus
-                          mode="range"
-                          defaultMonth={date?.from}
-                          selected={date}
-                          onSelect={setDate}
-                          numberOfMonths={2}
+                          mode="single"
+                          selected={endDate}
+                          onSelect={setEndDate}
                           locale={ptBR}
                         />
                       </PopoverContent>
@@ -185,7 +217,13 @@ export function SummaryTable({ transactions }: { transactions: Transaction[] }) 
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {filteredTransactions.length > 0 ? filteredTransactions.map((t) => (
+                            {isInvalidDateRange ? (
+                                <TableRow>
+                                    <TableCell colSpan={6} className="text-center h-24 text-destructive">
+                                        A data de início não pode ser posterior à data de fim.
+                                    </TableCell>
+                                </TableRow>
+                            ) : filteredTransactions.length > 0 ? filteredTransactions.map((t) => (
                                 <TableRow key={t.id} className={t.type === 'income' ? 'bg-emerald-50/30 dark:bg-emerald-900/10' : 'bg-rose-50/30 dark:bg-rose-900/10'}>
                                     <TableCell>{format(new Date(t.date), 'dd/MM/yyyy')}</TableCell>
                                     <TableCell className="font-medium">{t.description}</TableCell>
