@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { signInWithGoogle } from '@/lib/auth';
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import Image from 'next/image';
 
 // Google Icon SVG
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -112,14 +111,31 @@ export default function LoginPage() {
           </CardContent>
         </Card>
       </div>
-      <div className="hidden lg:block relative">
-        <Image
-          src="https://placehold.co/1280x1800.png"
-          data-ai-hint="aesthetics clinic"
-          alt="Imagem de uma clínica de estética"
-          fill
-          className="object-cover"
-        />
+      <div className="hidden bg-muted lg:flex items-center justify-center p-6 relative overflow-hidden">
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="0.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-[500px] w-[500px] text-primary/10 absolute -rotate-12"
+        >
+            <circle cx="12" cy="12" r="3" />
+            <circle cx="12" cy="5" r="2" />
+            <circle cx="12" cy="19" r="2" />
+            <circle cx="5" cy="12" r="2" />
+            <circle cx="19" cy="12" r="2" />
+            <circle cx="16.5" cy="7.5" r="2" />
+            <circle cx="7.5" cy="16.5" r="2" />
+            <circle cx="16.5" cy="16.5" r="2" />
+            <circle cx="7.5" cy="7.5" r="2" />
+        </svg>
+        <div className="text-center relative z-10">
+            <h2 className="text-4xl font-bold text-primary font-headline">Alines Finances</h2>
+            <p className="mt-2 text-lg text-muted-foreground">Sua beleza, suas finanças, em harmonia.</p>
+        </div>
       </div>
     </div>
   );
