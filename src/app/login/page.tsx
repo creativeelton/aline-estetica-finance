@@ -48,7 +48,7 @@ export default function LoginPage() {
         setIsLoading(false);
         return; // Don't show an error message
       } else if (err.code === 'auth/unauthorized-domain') {
-          errorMessage = 'O domínio deste aplicativo não está autorizado no Firebase. Adicione-o na aba Authentication > Settings > Authorized domains.'
+          errorMessage = `O domínio deste aplicativo (${window.location.hostname}) não está autorizado no Firebase. Adicione-o na aba Authentication > Settings > Authorized domains.`
       }
       else {
         console.error('Firebase Auth Error:', err);
