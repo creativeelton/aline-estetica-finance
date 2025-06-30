@@ -3,38 +3,47 @@
 import { useState, useMemo, useTransition } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import type { Transaction } from '@/types';
-import { format } from 'date-fns';
+import { format, subDays } from 'date-fns';
+import type { DateRange } from 'react-day-picker';
 import { ptBR } from 'date-fns/locale';
-import { Loader2, Trash2 } from 'lucide-react';
-import { deleteTransactionAction } from '@/app/resumo/actions';
+import { Loader2, Trash2, Calendar as CalendarIcon, FileDown } from 'lucide-react';
+import { deleteTransactionAction, generatePdfReportAction } from '@/app/resumo/actions';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 };
 
 export function SummaryTable({ transactions }: { transactions: Transaction[] }) {
-    const [selectedMonth, setSelectedMonth] = useState<string>('all');
-    const [isPending, startTransition] = useTransition();
+    const [date, setDate] = useState<DateRange | undefined>({
+      from: subDays(new Date(), 29),
+      to: new Date(),
+    });
+    const [isDeleting, startDeleteTransition] = useTransition();
+    const [isGeneratingPdf, startPdfTransition] = useTransition();
     const { toast } = useToast();
 
-    const availableMonths = useMemo(() => {
-        const months = new Set<string>();
-        transactions.forEach(t => months.add(format(new Date(t.date), 'yyyy-MM')));
-        return Array.from(months).sort().reverse();
-    }, [transactions]);
-
     const filteredTransactions = useMemo(() => {
-        if (selectedMonth === 'all') {
+        if (!date?.from || !date?.to) {
             return transactions;
         }
-        return transactions.filter(t => format(new Date(t.date), 'yyyy-MM') === selectedMonth);
-    }, [transactions, selectedMonth]);
+        const from = date.from;
+        from.setHours(0, 0, 0, 0);
+        const to = date.to;
+        to.setHours(23, 59, 59, 999);
+
+        return transactions.filter(t => {
+            const tDate = new Date(t.date);
+            return tDate >= from && tDate <= to;
+        });
+    }, [transactions, date]);
 
     const summary = useMemo(() => {
         return filteredTransactions.reduce((acc, t) => {
@@ -47,7 +56,7 @@ export function SummaryTable({ transactions }: { transactions: Transaction[] }) 
     const balance = summary.totalIncome - summary.totalExpense;
 
     const handleDelete = (transactionId: string) => {
-        startTransition(async () => {
+        startDeleteTransition(async () => {
             const result = await deleteTransactionAction(transactionId);
             if (result.success) {
                 toast({
@@ -64,27 +73,87 @@ export function SummaryTable({ transactions }: { transactions: Transaction[] }) 
         });
     };
 
+    const handleGeneratePdf = () => {
+      if (!date?.from || !date?.to) {
+        toast({
+            variant: "destructive",
+            title: "Erro",
+            description: "Por favor, selecione um intervalo de datas.",
+        });
+        return;
+      }
+
+      startPdfTransition(async () => {
+        const result = await generatePdfReportAction({ from: date.from!, to: date.to! });
+        if (result.success && result.pdfData) {
+            const link = document.createElement('a');
+            link.href = `data:application/pdf;base64,${result.pdfData}`;
+            link.download = `relatorio-financeiro-${format(date.from!, 'yyyy-MM-dd')}-a-${format(date.to!, 'yyyy-MM-dd')}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            toast({
+                title: "Sucesso!",
+                description: "Seu relatório em PDF está sendo baixado.",
+            });
+        } else {
+            toast({
+                variant: "destructive",
+                title: "Erro ao gerar PDF",
+                description: result.error || "Não foi possível gerar o relatório.",
+            });
+        }
+      });
+    };
+
     return (
         <Card className="rounded-2xl shadow-lg">
-            <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between">
+            <CardHeader className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                 <div>
                     <CardTitle>Resumo de Lançamentos</CardTitle>
                     <CardDescription>Visualize, filtre e gerencie todas as suas transações.</CardDescription>
                 </div>
-                <div className="w-full md:w-auto md:min-w-[180px] mt-4 md:mt-0">
-                    <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Filtrar por mês" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">Todos os Meses</SelectItem>
-                            {availableMonths.map(month => (
-                                <SelectItem key={month} value={month}>
-                                    {format(new Date(`${month}-02T12:00:00Z`), 'MMMM yyyy', { locale: ptBR })}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-full sm:w-[260px] justify-start text-left font-normal",
+                            !date && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {date?.from ? (
+                            date.to ? (
+                              <>
+                                {format(date.from, "LLL dd, y", { locale: ptBR })} -{" "}
+                                {format(date.to, "LLL dd, y", { locale: ptBR })}
+                              </>
+                            ) : (
+                              format(date.from, "LLL dd, y", { locale: ptBR })
+                            )
+                          ) : (
+                            <span>Escolha um período</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="end">
+                        <Calendar
+                          initialFocus
+                          mode="range"
+                          defaultMonth={date?.from}
+                          selected={date}
+                          onSelect={setDate}
+                          numberOfMonths={2}
+                          locale={ptBR}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <Button onClick={handleGeneratePdf} disabled={isGeneratingPdf} className="w-full sm:w-auto">
+                      {isGeneratingPdf ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
+                      Gerar PDF
+                    </Button>
                 </div>
             </CardHeader>
             <CardContent>
@@ -128,7 +197,7 @@ export function SummaryTable({ transactions }: { transactions: Transaction[] }) 
                                     <TableCell className="text-center">
                                        <AlertDialog>
                                             <AlertDialogTrigger asChild>
-                                                <Button variant="ghost" size="icon" disabled={isPending}>
+                                                <Button variant="ghost" size="icon" disabled={isDeleting}>
                                                     <Trash2 className="h-4 w-4 text-destructive" />
                                                     <span className="sr-only">Excluir</span>
                                                 </Button>
@@ -145,9 +214,9 @@ export function SummaryTable({ transactions }: { transactions: Transaction[] }) 
                                                     <AlertDialogAction
                                                         onClick={() => handleDelete(t.id)}
                                                         className="bg-destructive hover:bg-destructive/90"
-                                                        disabled={isPending}
+                                                        disabled={isDeleting}
                                                     >
-                                                        {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Excluir'}
+                                                        {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Excluir'}
                                                     </AlertDialogAction>
                                                 </AlertDialogFooter>
                                             </AlertDialogContent>
@@ -156,7 +225,7 @@ export function SummaryTable({ transactions }: { transactions: Transaction[] }) 
                                 </TableRow>
                             )) : (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center h-24">Nenhum lançamento encontrado.</TableCell>
+                                    <TableCell colSpan={6} className="text-center h-24">Nenhum lançamento encontrado para o período selecionado.</TableCell>
                                 </TableRow>
                             )}
                         </TableBody>

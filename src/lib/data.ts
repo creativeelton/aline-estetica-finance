@@ -11,10 +11,25 @@ let transactions: Transaction[] = [
   { id: '7', date: new Date('2024-06-03').toISOString(), type: 'expense', category: 'Aluguel', amount: 1200, paymentMethod: 'Boleto', description: 'Aluguel do estúdio' },
 ];
 
-export async function getTransactions(): Promise<Transaction[]> {
-  // In a real app, you'd fetch this from Firestore
-  return Promise.resolve(transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+export async function getTransactions(options?: { from?: string; to?: string }): Promise<Transaction[]> {
+  // In a real app, you'd fetch this from Firestore with where clauses
+  let filteredTransactions = transactions;
+
+  if (options?.from && options?.to) {
+    const fromDate = new Date(options.from);
+    fromDate.setHours(0, 0, 0, 0); // Start of the day
+    const toDate = new Date(options.to);
+    toDate.setHours(23, 59, 59, 999); // End of the day
+
+    filteredTransactions = transactions.filter(t => {
+        const tDate = new Date(t.date);
+        return tDate >= fromDate && tDate <= toDate;
+    });
+  }
+
+  return Promise.resolve(filteredTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
 }
+
 
 export async function getTransactionById(id: string): Promise<Transaction | undefined> {
   return Promise.resolve(transactions.find(t => t.id === id));
