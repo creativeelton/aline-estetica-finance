@@ -139,7 +139,7 @@ export function SummaryTable({ transactions }: { transactions: Transaction[] }) 
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
                           {startDate ? (
-                            format(startDate, "PPP", { locale: ptBR })
+                            format(startDate, "P", { locale: ptBR })
                           ) : (
                             <span>Data de Início</span>
                           )}
@@ -166,7 +166,7 @@ export function SummaryTable({ transactions }: { transactions: Transaction[] }) 
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
                           {endDate ? (
-                            format(endDate, "PPP", { locale: ptBR })
+                            format(endDate, "P", { locale: ptBR })
                           ) : (
                             <span>Data de Fim</span>
                           )}
