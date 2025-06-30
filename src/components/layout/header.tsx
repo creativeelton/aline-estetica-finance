@@ -1,6 +1,7 @@
 'use client';
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { usePathname } from "next/navigation";
+import { UserButton } from "./user-button";
 
 function getTitle(pathname: string): string {
   if (pathname === '/') return 'Dashboard';
@@ -20,6 +21,9 @@ export function AppHeader() {
         </div>
         <div className="flex-1">
             <h1 className="text-lg font-semibold md:text-2xl font-headline">{title}</h1>
+        </div>
+        <div>
+            <UserButton />
         </div>
     </header>
   );

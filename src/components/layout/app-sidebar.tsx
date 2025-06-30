@@ -10,12 +10,15 @@ import {
   SidebarFooter,
 } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
-import { Home, List, PlusCircle, Moon, Sun } from 'lucide-react';
+import { Home, List, PlusCircle, Moon, Sun, LogOut } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { signOutUser } from '@/lib/auth';
+import { useAuth } from '@/contexts/auth-context';
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const { user } = useAuth();
   const [theme, setTheme] = useState('light');
 
   useEffect(() => {
@@ -30,6 +33,12 @@ export function AppSidebar() {
     localStorage.setItem('theme', newTheme);
     document.documentElement.classList.toggle('dark', newTheme === 'dark');
   };
+
+  const handleSignOut = async () => {
+    await signOutUser();
+  };
+
+  if (!user) return null;
 
   return (
     <Sidebar>
@@ -85,6 +94,12 @@ export function AppSidebar() {
             <SidebarMenuButton onClick={toggleTheme} className="justify-start">
               {theme === 'light' ? <Moon /> : <Sun />}
               <span>Mudar Tema</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton onClick={handleSignOut} className="justify-start">
+              <LogOut />
+              <span>Sair</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

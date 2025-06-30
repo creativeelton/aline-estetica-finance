@@ -1,9 +1,7 @@
 import type { Metadata } from 'next';
 import { Toaster } from "@/components/ui/toaster"
-import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
-import { AppSidebar } from '@/components/layout/app-sidebar';
-import { AppHeader } from '@/components/layout/header';
 import './globals.css';
+import { AuthProvider } from '@/contexts/auth-context';
 
 export const metadata: Metadata = {
   title: 'Alines Finances',
@@ -23,15 +21,9 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        <SidebarProvider>
-          <AppSidebar />
-          <SidebarInset>
-              <AppHeader />
-              <main className="flex-1 p-4 md:p-6">
-                {children}
-              </main>
-          </SidebarInset>
-        </SidebarProvider>
+        <AuthProvider>
+          {children}
+        </AuthProvider>
         <Toaster />
       </body>
     </html>
