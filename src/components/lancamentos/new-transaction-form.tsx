@@ -3,6 +3,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -13,9 +15,9 @@ import { CalendarIcon, Loader2 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { Textarea } from "@/components/ui/textarea";
-import { categories, paymentMethods } from "@/lib/data";
+import { categories, paymentMethods, addTransaction } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
-import { addTransactionAction } from "@/app/lancamentos/actions";
+import { generateInsightForExpense } from "@/app/lancamentos/actions";
 import { ptBR } from "date-fns/locale";
 import { useAuth } from "@/contexts/auth-context";
 
@@ -32,6 +34,9 @@ const formSchema = z.object({
 export function NewTransactionForm() {
     const { toast } = useToast();
     const { user } = useAuth();
+    const router = useRouter();
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -54,31 +59,54 @@ export function NewTransactionForm() {
             return;
         }
 
-        const result = await addTransactionAction({ ...values, userId: user.uid });
+        setIsSubmitting(true);
 
-        if (result.success && result.data) {
+        try {
+            const newTransactionData = {
+                ...values,
+                userId: user.uid,
+                date: values.date.toISOString(),
+            };
+
+            // Step 1: Add transaction on the client. Firebase auth is handled by the SDK.
+            const newTransaction = await addTransaction(newTransactionData);
+
             toast({
                 title: "Sucesso!",
                 description: "Lançamento adicionado.",
             });
-            if (result.data.insight) {
-                toast({
-                    title: "💡 Insight da IA",
-                    description: result.data.insight,
-                    duration: 8000,
-                });
-            }
+            
             form.reset();
-        } else {
+            router.refresh(); // Revalidates data for all pages to show the new transaction
+
+            // Step 2: If it's an expense, call the server action to get an AI insight.
+            if (newTransaction.type === 'expense') {
+                const insightResult = await generateInsightForExpense({
+                    expenseDescription: newTransaction.description,
+                    expenseCategory: newTransaction.category,
+                    expenseValue: newTransaction.amount,
+                });
+                
+                if (insightResult.insight) {
+                    toast({
+                        title: "💡 Insight da IA",
+                        description: insightResult.insight,
+                        duration: 8000,
+                    });
+                }
+            }
+
+        } catch (error) {
+            console.error("Firebase save error:", error);
             toast({
                 variant: "destructive",
                 title: "Erro",
-                description: result.error || "Não foi possível adicionar o lançamento.",
+                description: "Falha ao salvar a transação no banco de dados.",
             });
+        } finally {
+            setIsSubmitting(false);
         }
     }
-
-    const isSubmitting = form.formState.isSubmitting;
 
   return (
     <Form {...form}>
