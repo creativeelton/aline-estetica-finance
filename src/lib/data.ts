@@ -11,19 +11,17 @@ import {
   where,
   getDoc
 } from 'firebase/firestore';
-import { auth } from './firebase';
 
 const transactionsCollection = collection(db, 'transactions');
 
-export async function getTransactions(options?: { from?: string; to?: string }): Promise<Transaction[]> {
-  const user = auth.currentUser;
-  if (!user) {
-    console.warn("Nenhum usuário autenticado encontrado. Retornando lista de transações vazia.");
+export async function getTransactions(userId: string, options?: { from?: string; to?: string }): Promise<Transaction[]> {
+  if (!userId) {
+    console.warn("Nenhum ID de usuário fornecido. Retornando lista de transações vazia.");
     return [];
   }
 
   const queryConstraints = [
-    where('userId', '==', user.uid),
+    where('userId', '==', userId),
     orderBy('date', 'desc')
   ];
   
@@ -57,22 +55,19 @@ export async function getTransactions(options?: { from?: string; to?: string }):
   return transactions;
 }
 
-export async function addTransaction(transaction: Omit<Transaction, 'id' | 'userId'>): Promise<Transaction> {
-  const user = auth.currentUser;
-  if (!user) throw new Error("Usuário não autenticado. Impossível adicionar transação.");
+export async function addTransaction(transaction: Omit<Transaction, 'id'>): Promise<Transaction> {
+  if (!transaction.userId) throw new Error("Usuário não autenticado. Impossível adicionar transação.");
 
-  const dataWithUser = { ...transaction, userId: user.uid };
-  const docRef = await addDoc(transactionsCollection, dataWithUser);
+  const docRef = await addDoc(transactionsCollection, transaction);
   
   return {
-    ...dataWithUser,
+    ...transaction,
     id: docRef.id,
   };
 }
 
-export async function deleteTransaction(id: string): Promise<{ success: boolean; error?: string }> {
-  const user = auth.currentUser;
-  if (!user) {
+export async function deleteTransaction(id: string, userId: string): Promise<{ success: boolean; error?: string }> {
+  if (!userId) {
     return { success: false, error: "Usuário não autenticado." };
   }
 
@@ -84,7 +79,7 @@ export async function deleteTransaction(id: string): Promise<{ success: boolean;
       return { success: false, error: "Transação não encontrada." };
     }
 
-    if (docSnap.data().userId !== user.uid) {
+    if (docSnap.data().userId !== userId) {
       // Security check: user is trying to delete someone else's transaction.
       return { success: false, error: "Permissão negada." };
     }

@@ -17,6 +17,7 @@ import { categories, paymentMethods } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
 import { addTransactionAction } from "@/app/lancamentos/actions";
 import { ptBR } from "date-fns/locale";
+import { useAuth } from "@/contexts/auth-context";
 
 
 const formSchema = z.object({
@@ -30,6 +31,7 @@ const formSchema = z.object({
 
 export function NewTransactionForm() {
     const { toast } = useToast();
+    const { user } = useAuth();
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -43,7 +45,16 @@ export function NewTransactionForm() {
     });
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
-        const result = await addTransactionAction(values);
+        if (!user) {
+            toast({
+                variant: "destructive",
+                title: "Erro de Autenticação",
+                description: "Usuário não encontrado. Tente fazer login novamente.",
+            });
+            return;
+        }
+
+        const result = await addTransactionAction({ ...values, userId: user.uid });
 
         if (result.success && result.data) {
             toast({

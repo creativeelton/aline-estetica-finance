@@ -7,22 +7,26 @@ import { PDFDocument, rgb, StandardFonts, PageSizes, PDFFont, PDFPage } from "pd
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-const deleteSchema = z.string().min(1, { message: "ID da transação é obrigatório." });
+const deleteSchema = z.object({
+  transactionId: z.string().min(1, { message: "ID da transação é obrigatório." }),
+  userId: z.string().min(1, { message: "ID do usuário é obrigatório." }),
+});
 
 type FormState = {
     success: boolean;
     error?: string;
 }
 
-export async function deleteTransactionAction(transactionId: string): Promise<FormState> {
-    const validatedId = deleteSchema.safeParse(transactionId);
+export async function deleteTransactionAction(params: z.infer<typeof deleteSchema>): Promise<FormState> {
+    const validatedParams = deleteSchema.safeParse(params);
 
-    if (!validatedId.success) {
-        return { success: false, error: "ID da transação inválido." };
+    if (!validatedParams.success) {
+        return { success: false, error: "ID da transação ou do usuário inválido." };
     }
 
     try {
-        const result = await deleteTransaction(validatedId.data);
+        const { transactionId, userId } = validatedParams.data;
+        const result = await deleteTransaction(transactionId, userId);
 
         if (!result.success) {
             return { success: false, error: result.error || "Falha ao excluir a transação." };
@@ -41,6 +45,7 @@ export async function deleteTransactionAction(transactionId: string): Promise<Fo
 const pdfReportSchema = z.object({
     from: z.date(),
     to: z.date(),
+    userId: z.string().min(1),
   });
   
   type PdfReportState = {
@@ -59,12 +64,12 @@ const pdfReportSchema = z.object({
       const validatedFields = pdfReportSchema.safeParse(values);
   
       if (!validatedFields.success) {
-          return { success: false, error: "Datas inválidas." };
+          return { success: false, error: "Datas ou ID do usuário inválidos." };
       }
       
       try {
-          const { from, to } = validatedFields.data;
-          const transactions = await getTransactions({ from: from.toISOString(), to: to.toISOString() });
+          const { from, to, userId } = validatedFields.data;
+          const transactions = await getTransactions(userId, { from: from.toISOString(), to: to.toISOString() });
   
           if (transactions.length === 0) {
             return { success: false, error: "Nenhum lançamento encontrado para o período selecionado." };

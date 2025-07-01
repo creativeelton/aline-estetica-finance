@@ -15,6 +15,7 @@ import { Loader2, Trash2, Calendar as CalendarIcon, FileDown } from 'lucide-reac
 import { deleteTransactionAction, generatePdfReportAction } from '@/app/resumo/actions';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/auth-context';
 
 const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -26,6 +27,7 @@ export function SummaryTable({ transactions }: { transactions: Transaction[] }) 
     const [isDeleting, startDeleteTransition] = useTransition();
     const [isGeneratingPdf, startPdfTransition] = useTransition();
     const { toast } = useToast();
+    const { user } = useAuth();
 
     const isInvalidDateRange = useMemo(() => {
       return startDate && endDate && startDate > endDate;
@@ -62,8 +64,12 @@ export function SummaryTable({ transactions }: { transactions: Transaction[] }) 
     const balance = summary.totalIncome - summary.totalExpense;
 
     const handleDelete = (transactionId: string) => {
+        if (!user) {
+            toast({ variant: "destructive", title: "Erro", description: "Usuário não autenticado." });
+            return;
+        }
         startDeleteTransition(async () => {
-            const result = await deleteTransactionAction(transactionId);
+            const result = await deleteTransactionAction({ transactionId, userId: user.uid });
             if (result.success) {
                 toast({
                     title: "Sucesso!",
@@ -80,6 +86,10 @@ export function SummaryTable({ transactions }: { transactions: Transaction[] }) 
     };
 
     const handleGeneratePdf = () => {
+      if (!user) {
+        toast({ variant: "destructive", title: "Erro", description: "Usuário não autenticado." });
+        return;
+      }
       if (!startDate || !endDate) {
         toast({
             variant: "destructive",
@@ -98,7 +108,7 @@ export function SummaryTable({ transactions }: { transactions: Transaction[] }) 
       }
 
       startPdfTransition(async () => {
-        const result = await generatePdfReportAction({ from: startDate, to: endDate });
+        const result = await generatePdfReportAction({ from: startDate, to: endDate, userId: user.uid });
         if (result.success && result.pdfData) {
             const link = document.createElement('a');
             link.href = `data:application/pdf;base64,${result.pdfData}`;

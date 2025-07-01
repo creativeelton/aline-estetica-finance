@@ -12,6 +12,7 @@ const formSchema = z.object({
     category: z.string().min(1),
     paymentMethod: z.string().min(1),
     description: z.string().min(1),
+    userId: z.string().min(1),
 });
 
 type FormState = {
@@ -31,10 +32,12 @@ export async function addTransactionAction(values: z.infer<typeof formSchema>): 
     }
     
     try {
-        const newTransaction = await addTransaction({
+        const newTransactionData = {
             ...validatedFields.data,
             date: validatedFields.data.date.toISOString(),
-        });
+        };
+        
+        const newTransaction = await addTransaction(newTransactionData);
         
         let insight: string | undefined = undefined;
 
