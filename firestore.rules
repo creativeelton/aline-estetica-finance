@@ -1,9 +1,19 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Regras para a coleção de transações
     match /transactions/{transactionId} {
-      allow read, write, delete: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+
+      // Permite que um usuário crie um documento se ele estiver logado
+      // e o campo 'userId' do novo documento for igual ao seu próprio ID de usuário.
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+
+      // Permite que um usuário leia (get, list), atualize ou exclua um documento
+      // se ele estiver logado e for o dono do documento (userId corresponde).
+      // A operação de 'list' (query) funciona porque a função getTransactions()
+      // sempre filtra por 'userId', satisfazendo essa regra.
+      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
   }
 }
