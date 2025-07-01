@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +13,8 @@ import type { Transaction } from '@/types';
 import { format, subDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Loader2, Trash2, Calendar as CalendarIcon, FileDown } from 'lucide-react';
-import { deleteTransactionAction, generatePdfReportAction } from '@/app/resumo/actions';
+import { deleteTransaction } from '@/lib/data';
+import { generatePdfReport } from '@/app/resumo/actions';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/auth-context';
@@ -28,6 +30,7 @@ export function SummaryTable({ transactions }: { transactions: Transaction[] }) 
     const [isGeneratingPdf, startPdfTransition] = useTransition();
     const { toast } = useToast();
     const { user } = useAuth();
+    const router = useRouter();
 
     const isInvalidDateRange = useMemo(() => {
       return startDate && endDate && startDate > endDate;
@@ -69,12 +72,13 @@ export function SummaryTable({ transactions }: { transactions: Transaction[] }) 
             return;
         }
         startDeleteTransition(async () => {
-            const result = await deleteTransactionAction({ transactionId, userId: user.uid });
+            const result = await deleteTransaction(transactionId, user.uid);
             if (result.success) {
                 toast({
                     title: "Sucesso!",
                     description: "Lançamento excluído.",
                 });
+                router.refresh();
             } else {
                 toast({
                     variant: "destructive",
@@ -108,7 +112,17 @@ export function SummaryTable({ transactions }: { transactions: Transaction[] }) 
       }
 
       startPdfTransition(async () => {
-        const result = await generatePdfReportAction({ from: startDate, to: endDate, userId: user.uid });
+        if (filteredTransactions.length === 0) {
+            toast({
+                variant: "destructive",
+                title: "Nenhum dado",
+                description: "Nenhum lançamento encontrado para o período selecionado.",
+            });
+            return;
+        }
+
+        const result = await generatePdfReport(filteredTransactions, startDate, endDate);
+        
         if (result.success && result.pdfData) {
             const link = document.createElement('a');
             link.href = `data:application/pdf;base64,${result.pdfData}`;
